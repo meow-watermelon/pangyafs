@@ -160,4 +160,4 @@ $ ./ls.pangya -f pangyafs.img /
 - [ ] UNIX VFS Support
 
 ## Design Documentation
-For detailed PangYa FS implementation and design, please refer to [comming soon].
+For detailed PangYa FS implementation and design, please refer to [coming soon].
