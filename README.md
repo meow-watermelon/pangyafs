@@ -7,9 +7,9 @@ PangYa FS manages raw binary disk images through a structured geometry of superb
 > **Note on Development:** Large Language Models (Gemini/ChatGPT) were utilized strictly for unit-test automation and debugging assistance. The filesystem architecture and core logic are original implementations.
 
 ## Filesystem Specification
-Block Size: 1024 bytes
-Max Filename: 13 Characters (+ 1 NUL terminator)
-Max File Size: 16 KB (Direct Mapping: 16 blocks)
+-   Block Size: 1024 bytes
+-   Max Filename: 13 Characters (+ 1 NUL terminator)
+-   Max File Size: 16 KB (Direct Mapping: 16 blocks)
 
 ## Filesystem Block Layout
 ```
