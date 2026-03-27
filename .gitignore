@@ -1,0 +1,12 @@
+unix-v6/
+*.o
+testfs.c
+testfs
+mkfs.pangya
+df.pangya
+ls.pangya
+stat.pangya
+mkdir.pangya
+rm.pangya
+cp.pangya
+pangyafs.img
