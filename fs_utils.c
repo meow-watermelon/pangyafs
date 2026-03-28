@@ -146,6 +146,12 @@ int read_superblock(int input_disk_image_fd, struct superblock *input_super_bloc
         goto error_handler;
     }
 
+    /* check superblock magic number */
+    if (input_super_block_buffer->s_magic != SUPERBLOCK_MAGIC_NUMBER) {
+        fprintf(stderr, "ERROR: magic number in superblock is not valid\n");
+        goto error_handler;
+    }
+
     return 1;
 
 error_handler:
@@ -153,6 +159,12 @@ error_handler:
 }
 
 int write_superblock(int input_disk_image_fd, struct superblock *input_super_block) {
+    /* check superblock magic number */
+    if (input_super_block->s_magic != SUPERBLOCK_MAGIC_NUMBER) {
+        fprintf(stderr, "ERROR: magic number in superblock is not valid\n");
+        goto error_handler;
+    }
+
     /* update superblock modification flag and timestamp */
     input_super_block->s_fmod = 0;
     input_super_block->s_time = time(NULL);
