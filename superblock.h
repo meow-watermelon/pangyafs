@@ -7,6 +7,9 @@
 #define BLOCKSIZE 1024
 #define BLOCK_BIT_SIZE (BLOCKSIZE * 8)
 
+/* superblock magic number */
+#define SUPERBLOCK_MAGIC_NUMBER 0x10102024
+
 struct superblock {
     unsigned long int s_isize; /* size in blocks of inode list */
     unsigned long int s_fsize; /* size in blocks of entire volume */
@@ -14,6 +17,7 @@ struct superblock {
     unsigned long int s_inode_map_size; /* size in blocks of inode bitmap */
     unsigned long int s_block_map_size; /* size in blocks of block bitmap */
     unsigned int s_fmod; /* super block modified flag */
+    unsigned int s_magic; /* super block magic number */
     time_t s_time; /* current date of last update */
 };
 

@@ -11,7 +11,7 @@
 #include "inode.h"
 #include "superblock.h"
 
-#define VERSION "0.0.1"
+#define VERSION "0.0.2"
 #define DISK_IMAGE_FILENAME "pangyafs.img"
 #define DISK_IMAGE_FILE_MODE 0644
 
@@ -227,6 +227,7 @@ int main(int argc, char *argv[]) {
     sb.s_ninodes = inode_size;
     sb.s_inode_map_size = get_inode_bitmap_block_size(inode_size);
     sb.s_block_map_size = get_block_bitmap_block_size(image_size);
+    sb.s_magic = SUPERBLOCK_MAGIC_NUMBER;
 
     /* if block#0 + block #1 + sb.s_inode_map_size + sb.s_block_map_size + sb.s_isize >= total number of blocks, bail out */
     if (2 + sb.s_inode_map_size + sb.s_block_map_size + sb.s_isize >= sb.s_fsize) {

@@ -1,1 +1,6 @@
-03/26/2025 - 0.0.1 initial commit
+03/26/2025 - 0.0.1
+  * initial commit
+
+03/28/2025 - 0.0.2
+  * issue #1 - Add filesystem magic number validation to the superblock
+  * update mkfs.c to include super magic number in initialization
