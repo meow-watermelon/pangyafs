@@ -1,8 +1,10 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <inttypes.h>
 #include <libgen.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +14,7 @@
 #include "fs_utils.h"
 #include "superblock.h"
 
-#define VERSION "0.0.1"
+#define VERSION "0.0.2"
 
 /* command line options */
 static int opt_flag_f = 0;
@@ -114,28 +116,28 @@ int main(int argc, char *argv[]) {
     if ((pathname_inode->i_mode & IFREG) != 0) {
         char *pathname_copy = strdup(pathname);
         if (pathname_copy != NULL) {
-            printf("%12lu %4d %12u %5s %14s\n", pathname_inode->i_num, pathname_inode->i_nlink, pathname_inode->i_size0, "REG", basename(pathname_copy));
+            printf("%12" PRIu32 " %4" PRIu16 "%12" PRIu32 " %5s %14s\n", pathname_inode->i_num, pathname_inode->i_nlink, pathname_inode->i_size0, "REG", basename(pathname_copy));
             free(pathname_copy);
         } else {
-            printf("%12lu %4d %12u %5s %14s\n", pathname_inode->i_num, pathname_inode->i_nlink, pathname_inode->i_size0, "REG", pathname);
+            printf("%12" PRIu32 " %4" PRIu16 " %12" PRIu32 " %5s %14s\n", pathname_inode->i_num, pathname_inode->i_nlink, pathname_inode->i_size0, "REG", pathname);
         }
     }
 
     /* scenario #2: directory */
     if ((pathname_inode->i_mode & IFDIR) != 0) {
         /* iterate dirent entries from each physical block in i_addr[] array */
-        unsigned long int physical_block;
+        uint32_t physical_block;
         struct inode *entry_inode;
         size_t dirent_entries = get_dirent_per_block();
         struct dirent dirent_entries_buffer[dirent_entries];
 
-        for (unsigned short int logical_block = 0; logical_block < NDIRECT; ++logical_block) {
+        for (uint8_t logical_block = 0; logical_block < NDIRECT; ++logical_block) {
             physical_block = pathname_inode->i_addr[logical_block];
 
             /* only processing non-zero physical block */
             if (physical_block != 0) {
                 if (read_block(disk_image_fd, physical_block, dirent_entries_buffer, sizeof(dirent_entries_buffer), 0) < 0) {
-                    fprintf(stderr, "ERROR: failed to read physical block %lu\n", physical_block);
+                    fprintf(stderr, "ERROR: failed to read physical block %" PRIu32 "\n", physical_block);
                     continue;
                 }
 
@@ -161,7 +163,7 @@ int main(int argc, char *argv[]) {
                         }
 
                         /* print output */
-                        printf("%12lu %4d %12u %5s %14s\n", entry_inode->i_num, entry_inode->i_nlink, entry_inode->i_size0, entry_mode, dirent_entries_buffer[i].dir_name);
+                        printf("%12" PRIu32 " %4" PRIu16 " %12" PRIu32 " %5s %14s\n", entry_inode->i_num, entry_inode->i_nlink, entry_inode->i_size0, entry_mode, dirent_entries_buffer[i].dir_name);
 
                         /* release resource */
                         put_inode(disk_image_fd, &sb, entry_inode);

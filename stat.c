@@ -1,7 +1,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <inttypes.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +13,7 @@
 #include "fs_utils.h"
 #include "superblock.h"
 
-#define VERSION "0.0.1"
+#define VERSION "0.0.2"
 
 /* command line options */
 static int opt_flag_f = 0;
@@ -106,8 +108,8 @@ int main(int argc, char *argv[]) {
 
     /* print output */
     printf("  File: %s\n", pathname);
-    printf("  Size: %-15d Blocks: %-10zu IO Block: %-6d\n", pathname_inode->i_size0, get_file_block_size(pathname_inode->i_size0), BLOCKSIZE);
-    printf("  Type: %-6s Inode: %-10lu Links: %-6d\n", get_file_type_name(pathname_inode->i_mode), pathname_inode->i_num, pathname_inode->i_nlink);
+    printf("  Size: %-15" PRIu32 " Blocks: %-10zu IO Block: %-6d\n", pathname_inode->i_size0, get_file_block_size(pathname_inode->i_size0), BLOCKSIZE);
+    printf("  Type: %-6s Inode: %-10" PRIu32 " Links: %-6" PRIu16 "\n", get_file_type_name(pathname_inode->i_mode), pathname_inode->i_num, pathname_inode->i_nlink);
 
     /* release resource */
     put_inode(disk_image_fd, &sb, pathname_inode);

@@ -1,6 +1,8 @@
 #ifndef INODE_H
 #define INODE_H
 
+#include <stdint.h>
+
 /*
  * TODO: add indirect block support later
  * max file size == BLOCKSIZE * NDIRECT == 1024 * 16 == 16 KB
@@ -11,9 +13,9 @@
 #define ROOT_INODE 1
 
 /* file mode */
-#define IALLOC 0x0001 /* inode is in use */
-#define IFREG 0x0002 /* regular file */
-#define IFDIR 0x0004 /* directory */
+#define IALLOC 0x00000001U /* inode is in use */
+#define IFREG 0x00000002U /* regular file */
+#define IFDIR 0x00000004U /* directory */
 
 /* in-core inode dirtiness */
 #define CLEAN 0
@@ -21,20 +23,20 @@
 
 /* disk inode struct */
 struct disk_inode {
-    unsigned int i_mode;
-    unsigned int i_nlink;
-    unsigned int i_size0;
-    unsigned long int i_addr[NDIRECT];
+    uint32_t i_mode;
+    uint16_t i_nlink;
+    uint32_t i_size0;
+    uint32_t i_addr[NDIRECT];
 };
 
 /* in-core inode struct */
 struct inode {
-    unsigned int i_mode;
-    unsigned int i_nlink;
-    unsigned int i_size0;
-    unsigned int i_dirty;
-    unsigned long int i_addr[NDIRECT];
-    unsigned long int i_num;
+    uint32_t i_mode;
+    uint16_t i_nlink;
+    uint32_t i_size0;
+    uint8_t i_dirty;
+    uint32_t i_addr[NDIRECT];
+    uint32_t i_num;
 };
 
 #endif /* INODE_H */

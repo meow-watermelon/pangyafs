@@ -1,8 +1,10 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <inttypes.h>
 #include <libgen.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,7 +16,7 @@
 #include "fs_utils.h"
 #include "superblock.h"
 
-#define VERSION "0.0.1"
+#define VERSION "0.0.2"
 
 /* command line options */
 static int opt_flag_f = 0;
@@ -164,7 +166,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* check if target pathname exists or not */
-    long int ret_search_dir = search_dir(disk_image_fd, &sb, parent_dir_inode, base_name);
+    int32_t ret_search_dir = search_dir(disk_image_fd, &sb, parent_dir_inode, base_name);
 
     if (ret_search_dir > 0) {
         fprintf(stderr, "ERROR: target path name %s exists already\n", target_path_name);
@@ -201,25 +203,25 @@ int main(int argc, char *argv[]) {
         }
 
         /* allocate block */
-        long int block_number = alloc_block(disk_image_fd, &sb);
+        int32_t block_number = alloc_block(disk_image_fd, &sb);
         if (block_number < 0) {
             fprintf(stderr, "ERROR: failed to allocate block for %s: %s\n", target_path_name, strerror(-(int)block_number));
             goto error_handler;
         }
 
         /* write data to allocated block */
-        int ret_write_block = write_block(disk_image_fd, (unsigned long int)block_number, buffer, BLOCKSIZE, 0);
+        int ret_write_block = write_block(disk_image_fd, (uint32_t)block_number, buffer, BLOCKSIZE, 0);
         if (ret_write_block < 0) {
-            fprintf(stderr, "ERROR: failed to write block number %lu for %s: %s\n", (unsigned long int)block_number, target_path_name, strerror(-ret_write_block));
+            fprintf(stderr, "ERROR: failed to write block number %" PRIu32 " for %s: %s\n", (uint32_t)block_number, target_path_name, strerror(-ret_write_block));
             goto error_handler;
         }
 
         /* write block number into i_addr[] array */
-        target_path_inode->i_addr[i] = (unsigned long int)block_number;
+        target_path_inode->i_addr[i] = (uint32_t)block_number;
     }
 
     /* set new file metadata */
-    target_path_inode->i_size0 = (unsigned int)host_stat.st_size;
+    target_path_inode->i_size0 = (uint32_t)host_stat.st_size;
     target_path_inode->i_nlink = 1; /* fail-safe. alloc_inode() should set this item to 1 already */
 
     /* add new file entry to parent directory */
