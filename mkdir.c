@@ -1,8 +1,10 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <inttypes.h>
 #include <libgen.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +14,7 @@
 #include "fs_utils.h"
 #include "superblock.h"
 
-#define VERSION "0.0.1"
+#define VERSION "0.0.2"
 
 /* command line options */
 static int opt_flag_f = 0;
@@ -139,7 +141,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* check if pathname exists or not */
-    long int ret_search_dir = search_dir(disk_image_fd, &sb, parent_dir_inode, base_name);
+    int32_t ret_search_dir = search_dir(disk_image_fd, &sb, parent_dir_inode, base_name);
 
     if (ret_search_dir > 0) {
         fprintf(stderr, "ERROR: path name %s exists already\n", pathname);
@@ -159,7 +161,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* allocate block for dirents */
-    long int dir_block_number = alloc_block(disk_image_fd, &sb);
+    int32_t dir_block_number = alloc_block(disk_image_fd, &sb);
     if (dir_block_number < 0) {
         fprintf(stderr, "ERROR: failed to allocate block for directory %s\n", pathname);
         goto error_handler;
@@ -174,7 +176,7 @@ int main(int argc, char *argv[]) {
     dirents[1].inode_number = parent_dir_inode->i_num;
     strncpy(dirents[1].dir_name, "..", DIR_NAME_LENGTH);
 
-    int ret_write_block = write_block(disk_image_fd, (unsigned long int)dir_block_number, dirents, sizeof(dirents), 0);
+    int ret_write_block = write_block(disk_image_fd, (uint32_t)dir_block_number, dirents, sizeof(dirents), 0);
     if (ret_write_block < 0) {
         fprintf(stderr, "ERROR: failed to write dirent entries to allocated block: %s\n", strerror(-ret_write_block));
         goto error_handler;
@@ -183,7 +185,7 @@ int main(int argc, char *argv[]) {
     /* set new directory metadata */
     dir_inode->i_size0 = 2 * sizeof(struct dirent);
     dir_inode->i_nlink = 2; /* fail-safe. alloc_inode() should set this item to 2 already */
-    dir_inode->i_addr[0] = (unsigned long int)dir_block_number;
+    dir_inode->i_addr[0] = (uint32_t)dir_block_number;
 
     /* add new directory entry to parent directory */
     int ret_add_entry = add_entry(disk_image_fd, &sb, parent_dir_inode, base_name, dir_inode->i_num);

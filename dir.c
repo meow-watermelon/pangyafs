@@ -1,4 +1,6 @@
 #include <errno.h>
+#include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,7 +9,7 @@
 #include "fs_utils.h"
 #include "superblock.h"
 
-long int search_dir(int input_disk_image_fd, struct superblock *input_super_block, struct inode *input_inode, char *dir_name) {
+int32_t search_dir(int input_disk_image_fd, struct superblock *input_super_block, struct inode *input_inode, char *dir_name) {
     size_t dirent_entries = get_dirent_per_block();
     struct dirent dirent_entries_buffer[dirent_entries];
 
@@ -17,14 +19,14 @@ long int search_dir(int input_disk_image_fd, struct superblock *input_super_bloc
     }
 
     /* check each logical block */
-    for (unsigned short int logical_block = 0; logical_block < NDIRECT; ++logical_block) {
+    for (uint8_t logical_block = 0; logical_block < NDIRECT; ++logical_block) {
         /* if physical block is 0, bail out. should not allocate new block by bmap() */
         if (input_inode->i_addr[logical_block] == 0) {
             break;
         }
 
         /* get physical block number */
-        unsigned long int block_number = bmap(input_disk_image_fd, input_super_block, input_inode, logical_block);
+        uint32_t block_number = bmap(input_disk_image_fd, input_super_block, input_inode, logical_block);
         if (block_number == 0) {
             break;
         }
@@ -38,7 +40,7 @@ long int search_dir(int input_disk_image_fd, struct superblock *input_super_bloc
             /* only check if the inode number is not equal to 0 */
             if (dirent_entries_buffer[i].inode_number != 0) {
                 if (strncmp(dirent_entries_buffer[i].dir_name, dir_name, DIR_NAME_LENGTH) == 0) {
-                    return (long int)dirent_entries_buffer[i].inode_number;
+                    return (int32_t)dirent_entries_buffer[i].inode_number;
                 }
             }
         }
@@ -80,7 +82,7 @@ struct inode *namei(int input_disk_image_fd, struct superblock *input_super_bloc
         }
 
         /* find child path inode number */
-        long int child_inode_number = search_dir(input_disk_image_fd, input_super_block, current_inode, token);
+        int32_t child_inode_number = search_dir(input_disk_image_fd, input_super_block, current_inode, token);
 
         put_inode(input_disk_image_fd, input_super_block, current_inode);
 
@@ -91,7 +93,7 @@ struct inode *namei(int input_disk_image_fd, struct superblock *input_super_bloc
         }
 
         /* found child and get child's in-core inode */
-        current_inode = get_inode(input_disk_image_fd, input_super_block, (unsigned long int)child_inode_number);
+        current_inode = get_inode(input_disk_image_fd, input_super_block, (uint32_t)child_inode_number);
         if (current_inode == NULL) {
             free(path_copy);
 
@@ -107,8 +109,8 @@ struct inode *namei(int input_disk_image_fd, struct superblock *input_super_bloc
     return current_inode;
 }
 
-int add_entry(int input_disk_image_fd, struct superblock *input_super_block, struct inode *input_parent_inode, char *input_entry_name, unsigned long int input_entry_inode) {
-    unsigned long int physical_block;
+int add_entry(int input_disk_image_fd, struct superblock *input_super_block, struct inode *input_parent_inode, char *input_entry_name, uint32_t input_entry_inode) {
+    uint32_t physical_block;
     size_t dirent_entries = get_dirent_per_block();
     struct dirent dirent_entries_buffer[dirent_entries];
 
@@ -118,7 +120,7 @@ int add_entry(int input_disk_image_fd, struct superblock *input_super_block, str
     }
 
     /* check if entry name exists already */
-    long int found_dir_inode = search_dir(input_disk_image_fd, input_super_block, input_parent_inode, input_entry_name);
+    int32_t found_dir_inode = search_dir(input_disk_image_fd, input_super_block, input_parent_inode, input_entry_name);
 
     if (found_dir_inode > 0) {
         return -EEXIST;
@@ -129,7 +131,7 @@ int add_entry(int input_disk_image_fd, struct superblock *input_super_block, str
     }
 
     /* scenario #1 - find available dirent from non-zero block */
-    for (unsigned short int logical_block = 0; logical_block < NDIRECT; ++logical_block) {
+    for (uint8_t logical_block = 0; logical_block < NDIRECT; ++logical_block) {
         physical_block = input_parent_inode->i_addr[logical_block];
 
         /* scan each physical block and check if available dirent exists */
@@ -155,7 +157,7 @@ int add_entry(int input_disk_image_fd, struct superblock *input_super_block, str
                     /* increase parent directory space size */
                     size_t current_entry_postition = (logical_block * (dirent_entries * sizeof(struct dirent))) + (i + 1) * sizeof(struct dirent);
                     if (current_entry_postition > input_parent_inode->i_size0) {
-                        input_parent_inode->i_size0 = (unsigned int)current_entry_postition;
+                        input_parent_inode->i_size0 = (uint32_t)current_entry_postition;
                     }
 
                     /* mark parent inode as dirty */
@@ -168,19 +170,19 @@ int add_entry(int input_disk_image_fd, struct superblock *input_super_block, str
     }
 
     /* scenario #2 - allocate a new block and write dirent entry */
-    for (unsigned short int logical_block = 0; logical_block < NDIRECT; ++logical_block) {
+    for (uint8_t logical_block = 0; logical_block < NDIRECT; ++logical_block) {
         physical_block = input_parent_inode->i_addr[logical_block];
 
         if (physical_block == 0) {
             /* a new block needs to be allocated */
-            long int new_physical_block = alloc_block(input_disk_image_fd, input_super_block);
+            int32_t new_physical_block = alloc_block(input_disk_image_fd, input_super_block);
 
             if (new_physical_block < 0) {
                 return -EIO;
             }
 
             /* update new physical block in i_addr[] */
-            input_parent_inode->i_addr[logical_block] = (unsigned long int)new_physical_block;
+            input_parent_inode->i_addr[logical_block] = (uint32_t)new_physical_block;
 
             /* fill out dirent information */
             struct dirent new_dirent;
@@ -190,12 +192,12 @@ int add_entry(int input_disk_image_fd, struct superblock *input_super_block, str
             strncpy(new_dirent.dir_name, input_entry_name, DIR_NAME_LENGTH);
 
             /* write back dirent entry to disk */
-            if (write_block(input_disk_image_fd, (unsigned long int)new_physical_block, &new_dirent, sizeof(struct dirent), 0) < 0) {
+            if (write_block(input_disk_image_fd, (uint32_t)new_physical_block, &new_dirent, sizeof(struct dirent), 0) < 0) {
                 return -EIO;
             }
 
             /* increase parent directory space size */
-            input_parent_inode->i_size0 = (unsigned int)(logical_block * (dirent_entries * sizeof(struct dirent))) + (unsigned int)sizeof(struct dirent);
+            input_parent_inode->i_size0 = (uint32_t)(logical_block * (dirent_entries * sizeof(struct dirent))) + (uint32_t)sizeof(struct dirent);
 
             /* mark parent inode as dirty */
             input_parent_inode->i_dirty = DIRTY;
@@ -208,7 +210,7 @@ int add_entry(int input_disk_image_fd, struct superblock *input_super_block, str
 }
 
 int detach_entry(int input_disk_image_fd, struct superblock *input_super_block, struct inode *input_parent_inode, char *input_entry_name) {
-    unsigned long int physical_block;
+    uint32_t physical_block;
     size_t dirent_entries = get_dirent_per_block();
     struct dirent dirent_entries_buffer[dirent_entries];
 
@@ -223,7 +225,7 @@ int detach_entry(int input_disk_image_fd, struct superblock *input_super_block, 
     }
 
     /* get entry inode number */
-    long int found_dir_inode = search_dir(input_disk_image_fd, input_super_block, input_parent_inode, input_entry_name);
+    int32_t found_dir_inode = search_dir(input_disk_image_fd, input_super_block, input_parent_inode, input_entry_name);
 
     if (found_dir_inode == 0) {
         return -ENOENT;
@@ -234,7 +236,7 @@ int detach_entry(int input_disk_image_fd, struct superblock *input_super_block, 
     }
 
     /* search dirent from non-zero physical blocks */
-    for (unsigned short int logical_block = 0; logical_block < NDIRECT; ++logical_block) {
+    for (uint8_t logical_block = 0; logical_block < NDIRECT; ++logical_block) {
         physical_block = input_parent_inode->i_addr[logical_block];
 
         if (physical_block != 0) {
@@ -246,7 +248,7 @@ int detach_entry(int input_disk_image_fd, struct superblock *input_super_block, 
             /* read each dirent from physical block */
             for (size_t i = 0; i < dirent_entries; ++i) {
                 /* should only match the exact entry name */
-                if (dirent_entries_buffer[i].inode_number == (unsigned long int)found_dir_inode && strncmp(dirent_entries_buffer[i].dir_name, input_entry_name, DIR_NAME_LENGTH) == 0) {
+                if (dirent_entries_buffer[i].inode_number == (uint32_t)found_dir_inode && strncmp(dirent_entries_buffer[i].dir_name, input_entry_name, DIR_NAME_LENGTH) == 0) {
                     /* set dirent inode_number as 0 */
                     dirent_entries_buffer[i].inode_number = 0;
 

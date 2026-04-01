@@ -47,7 +47,7 @@ As an educational project focusing on core fundamentals, PangYa FS currently ope
 -   No indirect block support. Only 16 direct blocks layout is supported
 -   No reference count item in inode structures
 -   No POSIX MAC(modify / access / change) timestamps in inode structures
--   No UNIX VFS/FUSE interface
+-   No UNIX VFS / FUSE interface
 
 ## User-space Tools
 | Command | Description |
@@ -75,30 +75,31 @@ disk image file size: 500 KB
 
 ===== INITIALIZE FILESYSTEM =====
 block size: 1024 B
-superblock size: 56 B
-inode unit size: 144 B
-directory entry unit size: 24 B
+superblock size: 40 B
+inode unit size: 76 B
+directory entry unit size: 20 B
 filesystem size in block: 500
 number of inode bitmap blocks: 1
 number of block bitmap blocks: 1
-number of allocated inodes: 100 
-number of inodes per block: 7
-number of blocks for allocated inodes: 15
+number of allocated inodes: 100
+number of inodes per block: 13
+number of blocks for allocated inodes: 8
 
 ===== WRITE INODE BITMAP =====
 
 ===== WRITE BLOCK BITMAP =====
+
 ```
  - **Basic Operations**
 ```
 # check disk space usage
-$ ./df.pangya -f pangyafs.img 
+$ ./df.pangya -f pangyafs.img
 ===== SUPERBLOCK INFORMATION =====
 block size: 1024 B
 filesystem size(byte): 512000 B
 filesystem size(block): 500
 number of inode(s): 100
-inode list size(block): 15
+inode list size(block): 8
 inode bitmap size(block): 1
 block bitmap size(block): 1
 
@@ -108,14 +109,14 @@ block bitmap size(block): 1
 
 ===== BLOCK USAGE INFORMATION =====
       1024-blocks     Used     Available  Capacity
-              500       20           480     4.00%
+              500       13           487     2.60%
 
 
 # list the root directory
 $ ./ls.pangya -f pangyafs.img /
        INODE LINK         SIZE  TYPE           NAME
-           1    2           48   DIR              .
-           1    2           48   DIR             ..
+           1    2           40   DIR              .
+           1    2           40   DIR             ..
 
 # create a directory
 $ ./mkdir.pangya -f pangyafs.img /dir1
@@ -133,8 +134,8 @@ $ ./stat.pangya -f pangyafs.img /dir1/testfile1
 # list the /dir1 directory
 $ ./ls.pangya -f pangyafs.img /dir1
        INODE LINK         SIZE  TYPE           NAME
-           2    2           72   DIR              .
-           1    3           72   DIR             ..
+           2    2           60   DIR              .
+           1    3           60   DIR             ..
            3    1           29   REG      testfile1
 
 # remove the test file
@@ -146,13 +147,13 @@ $ ./rm.pangya -f pangyafs.img /dir1
 # list the root directory again
 $ ./ls.pangya -f pangyafs.img /
        INODE LINK         SIZE  TYPE           NAME
-           1    2           72   DIR              .
-           1    2           72   DIR             ..
+           1    2           60   DIR              .
+           1    2           60   DIR             ..
 
 ```
 
 ## Roadmap & Future Implementation
-- [ ] Fixed-Width Integer Cleanup (`uint32_t`) for Cross-Platform Safety
+- [x] Fixed-Width Integer Cleanup for Cross-Platform Safety
 - [ ] Indirect Block Support (Files > 16KB)
 - [ ] Hard Link Support & Reference Counting
 - [ ] Symbolic Links

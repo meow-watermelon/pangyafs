@@ -1,6 +1,18 @@
 03/26/2025 - 0.0.1
-  * initial commit
+  * Initial commit
 
 03/28/2025 - 0.0.2
   * issue #1 - Add filesystem magic number validation to the superblock
-  * update mkfs.c to include super magic number in initialization
+  * application change
+    * mkfs.c - 0.0.2: include superblock magic number in initialization
+
+04/01/2025 - 0.0.3
+  * issue #2 - Fixed-width integer cleanup
+  * application change
+    * mkfs.c - 0.0.3: fixed-width integer support
+    * df.c - 0.0.2: fixed-width integer support
+    * stat.c - 0.0.2: fixed-width integer support
+    * ls.c - 0.0.2: fixed-width integer support
+    * mkdir.c - 0.0.2: fixed-width integer support
+    * rm.c - 0.0.2: fixed-width integer support
+    * cp.c - 0.0.2: fixed-width integer support

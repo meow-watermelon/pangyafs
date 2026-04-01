@@ -1,7 +1,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <inttypes.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,7 +12,7 @@
 #include "fs_utils.h"
 #include "superblock.h"
 
-#define VERSION "0.0.1"
+#define VERSION "0.0.2"
 
 /* command line options */
 static int opt_flag_f = 0;
@@ -27,52 +29,52 @@ static void usage(void) {
 static void print_superblock_info(struct superblock *input_super_block) {
     printf("===== SUPERBLOCK INFORMATION =====\n");
     printf("block size: %hu B\n", BLOCKSIZE);
-    printf("filesystem size(byte): %lu B\n", input_super_block->s_fsize * BLOCKSIZE);
-    printf("filesystem size(block): %lu\n", input_super_block->s_fsize);
-    printf("number of inode(s): %lu\n", input_super_block->s_ninodes);
-    printf("inode list size(block): %lu\n", input_super_block->s_isize);
-    printf("inode bitmap size(block): %lu\n", input_super_block->s_inode_map_size);
-    printf("block bitmap size(block): %lu\n", input_super_block->s_block_map_size);
+    printf("filesystem size(byte): %" PRIu32 " B\n", input_super_block->s_fsize * BLOCKSIZE);
+    printf("filesystem size(block): %" PRIu32 "\n", input_super_block->s_fsize);
+    printf("number of inode(s): %" PRIu32 "\n", input_super_block->s_ninodes);
+    printf("inode list size(block): %" PRIu32 "\n", input_super_block->s_isize);
+    printf("inode bitmap size(block): %" PRIu32 "\n", input_super_block->s_inode_map_size);
+    printf("block bitmap size(block): %" PRIu32 "\n", input_super_block->s_block_map_size);
     printf("\n");
 }
 
 static void print_inode_usage_info(int input_disk_image_fd, struct superblock *input_super_block) {
     char *banner = "      Inodes    IUsed    IFree  IUse%";
 
-    unsigned long int inodes = input_super_block->s_ninodes;
+    uint32_t inodes = input_super_block->s_ninodes;
 
-    long int iused = count_bits(input_disk_image_fd, input_super_block, INODE_BITMAP);
+    int32_t iused = count_bits(input_disk_image_fd, input_super_block, INODE_BITMAP);
     if (iused < 0) {
         fprintf(stderr, "ERROR: failed to retrieve bitmap count from inode bitmap\n");
         return;
     }
 
-    unsigned long int ifree = inodes - (unsigned long int)iused;
+    uint32_t ifree = inodes - (uint32_t)iused;
     double iuse = (double)iused / (double)inodes * 100;
 
     printf("===== INODE USAGE INFORMATION =====\n");
     printf("%s\n", banner);
-    printf("%12lu %8lu %8lu %5.2f%%\n", inodes, iused, ifree, iuse);
+    printf("%12" PRIu32 " %8" PRId32 " %8" PRIu32 " %5.2f%%\n", inodes, iused, ifree, iuse);
     printf("\n");
 }
 
 static void print_block_usage_info(int input_disk_image_fd, struct superblock *input_super_block) {
     char *banner = "      1024-blocks     Used     Available  Capacity";
 
-    unsigned long int blocks = input_super_block->s_fsize;
+    uint32_t blocks = input_super_block->s_fsize;
 
-    long int bused = count_bits(input_disk_image_fd, input_super_block, BLOCK_BITMAP);
+    int32_t bused = count_bits(input_disk_image_fd, input_super_block, BLOCK_BITMAP);
     if (bused < 0) {
         fprintf(stderr, "ERROR: failed to retrieve bitmap count from block bitmap\n");
         return;
     }
 
-    unsigned long int bavail = blocks - (unsigned long int)bused;
+    uint32_t bavail = blocks - (uint32_t)bused;
     double bcap = (double)bused / (double)blocks * 100;
 
     printf("===== BLOCK USAGE INFORMATION =====\n");
     printf("%s\n", banner);
-    printf("%17lu %8lu %13lu %8.2f%%\n", blocks, bused, bavail, bcap);
+    printf("%17" PRIu32 " %8" PRId32 " %13" PRIu32 " %8.2f%%\n", blocks, bused, bavail, bcap);
     printf("\n");
 }
 

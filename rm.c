@@ -12,7 +12,7 @@
 #include "fs_utils.h"
 #include "superblock.h"
 
-#define VERSION "0.0.1"
+#define VERSION "0.0.2"
 
 /* command line options */
 static int opt_flag_f = 0;
@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
         size_t dirent_entries = get_dirent_per_block();
         struct dirent dirent_entries_buffer[dirent_entries];
 
-        for (unsigned short int logical_block = 0; logical_block < NDIRECT; ++logical_block) {
+        for (uint8_t logical_block = 0; logical_block < NDIRECT; ++logical_block) {
             if (pathname_inode->i_addr[logical_block] != 0) {
                 /* FIXME: ignore read block failure */
                 read_block(disk_image_fd, pathname_inode->i_addr[logical_block], dirent_entries_buffer, sizeof(dirent_entries_buffer), 0);
