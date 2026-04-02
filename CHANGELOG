@@ -1,12 +1,12 @@
-03/26/2025 - 0.0.1
+03/26/2026 - 0.0.1
   * Initial commit
 
-03/28/2025 - 0.0.2
+03/28/2026 - 0.0.2
   * issue #1 - Add filesystem magic number validation to the superblock
   * application change
     * mkfs.c - 0.0.2: include superblock magic number in initialization
 
-04/01/2025 - 0.0.3
+04/01/2026 - 0.0.3
   * issue #2 - Fixed-width integer cleanup
   * application change
     * mkfs.c - 0.0.3: fixed-width integer support
@@ -16,3 +16,6 @@
     * mkdir.c - 0.0.2: fixed-width integer support
     * rm.c - 0.0.2: fixed-width integer support
     * cp.c - 0.0.2: fixed-width integer support
+
+04/01/2026 - 0.0.4
+  * issue #3 - Standardize return values across core filesystem functions

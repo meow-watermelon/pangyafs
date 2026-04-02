@@ -1,7 +1,5 @@
 unix-v6/
 *.o
-testfs.c
-testfs
 mkfs.pangya
 df.pangya
 ls.pangya
