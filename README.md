@@ -31,7 +31,8 @@ PangYa FS manages raw binary disk images through a structured geometry of superb
 │  [ Block Y ]  - Inode Table (Inode List)
 │  [   ...   ]  - (Size depends on s_isize)
 │               - Contains 'disk_inode' structures
-│               - Includes ROOT_INODE at the beginning of the list
+│               - Index 0: Reserved (Null / Unused)
+│               - Index 1: ROOT_INODE (/)
 ├───────────────┤
 │  [ Block Z ]  - Data Blocks Area
 │  [   ...   ]  - (Occupies the remainder of s_fsize)
