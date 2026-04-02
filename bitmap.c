@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -24,7 +25,7 @@ int bitmap_set(int input_disk_image_fd, struct superblock *input_super_block, ui
         /* if input inode number is greater than total number of inodes, bail out */
         if (input_number >= input_super_block->s_ninodes) {
             fprintf(stderr, "ERROR: input inode number %" PRIu32 " is greater than number of total inodes %" PRIu32 "\n", input_number, input_super_block->s_ninodes);
-            goto error_handler;
+            return -EINVAL;
         }
     } else {
         bitmap_start_block = 2 + input_super_block->s_inode_map_size;
@@ -41,7 +42,7 @@ int bitmap_set(int input_disk_image_fd, struct superblock *input_super_block, ui
     int ret_read_block = read_block(input_disk_image_fd, bitmap_block_number, bitmap, BLOCKSIZE, 0);
     if (ret_read_block < 0) {
         fprintf(stderr, "ERROR: failed to read target block %" PRIu32 "\n", bitmap_block_number);
-        goto error_handler;
+        return -EIO;
     }
 
     /* set allocation bit at byte index on target block */
@@ -51,13 +52,10 @@ int bitmap_set(int input_disk_image_fd, struct superblock *input_super_block, ui
     int ret_write_block = write_block(input_disk_image_fd, bitmap_block_number, bitmap, BLOCKSIZE, 0);
     if (ret_write_block < 0) {
         fprintf(stderr, "ERROR: failed to write target block %" PRIu32 "\n", bitmap_block_number);
-        goto error_handler;
+        return -EIO;
     }
 
     return 1;
-
-error_handler:
-    return -1;
 }
 
 int bitmap_clear(int input_disk_image_fd, struct superblock *input_super_block, uint32_t input_number, int bitmap_type) {
@@ -71,7 +69,7 @@ int bitmap_clear(int input_disk_image_fd, struct superblock *input_super_block, 
         /* if input inode number is greater than total number of inodes, bail out */
         if (input_number >= input_super_block->s_ninodes) {
             fprintf(stderr, "ERROR: input inode number %" PRIu32 " is greater than number of total inodes %" PRIu32 "\n", input_number, input_super_block->s_ninodes);
-            goto error_handler;
+            return -EINVAL;
         }
     } else {
         bitmap_start_block = 2 + input_super_block->s_inode_map_size;
@@ -88,7 +86,7 @@ int bitmap_clear(int input_disk_image_fd, struct superblock *input_super_block, 
     int ret_read_block = read_block(input_disk_image_fd, bitmap_block_number, bitmap, BLOCKSIZE, 0);
     if (ret_read_block < 0) {
         fprintf(stderr, "ERROR: failed to read target block %" PRIu32 "\n", bitmap_block_number);
-        goto error_handler;
+        return -EIO;
     }
 
     /* set allocation bit at byte index on target block */
@@ -98,13 +96,10 @@ int bitmap_clear(int input_disk_image_fd, struct superblock *input_super_block, 
     int ret_write_block = write_block(input_disk_image_fd, bitmap_block_number, bitmap, BLOCKSIZE, 0);
     if (ret_write_block < 0) {
         fprintf(stderr, "ERROR: failed to write target block %" PRIu32 "\n", bitmap_block_number);
-        goto error_handler;
+        return -EIO;
     }
 
     return 1;
-
-error_handler:
-    return -1;
 }
 
 int32_t count_bits(int input_disk_image_fd, struct superblock *input_super_block, int bitmap_type) {
@@ -134,7 +129,7 @@ int32_t count_bits(int input_disk_image_fd, struct superblock *input_super_block
         ret_read_block = read_block(input_disk_image_fd, bitmap_block_number, bitmap, BLOCKSIZE, 0);
         if (ret_read_block < 0) {
             fprintf(stderr, "ERROR: failed to read target block %" PRIu32 "\n", bitmap_block_number);
-            goto error_handler;
+            return -EIO;
         }
 
         /* read each byte from bitmap buffer to test bit */
@@ -148,7 +143,4 @@ int32_t count_bits(int input_disk_image_fd, struct superblock *input_super_block
     }
 
     return bit_count;
-
-error_handler:
-    return -1;
 }

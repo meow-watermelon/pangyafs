@@ -89,18 +89,15 @@ int read_block(int input_disk_image_fd, uint32_t block_number, void *data, size_
 
     if (ret_pread < 0) {
         fprintf(stderr, "ERROR: failed to read data from block #%" PRIu32 " with data size %zu at offset %" PRIu32 ": %s\n", block_number, data_size, (uint32_t)final_offset, strerror(errno));
-        goto error_handler;
+        return -EIO;
     }
 
     if ((uint32_t)ret_pread != data_size) {
         fprintf(stderr, "ERROR: failed to read data from block #%" PRIu32 " with data size %zu at offset %" PRIu32 ": %" PRIu32 " byte(s) returned\n", block_number, data_size, (uint32_t)final_offset, (uint32_t)ret_pread);
-        goto error_handler;
+        return -EIO;
     }
 
     return 1;
-
-error_handler:
-    return -EIO;
 }
 
 int write_block(int input_disk_image_fd, uint32_t block_number, void *data, size_t data_size, off_t block_offset) {
@@ -109,18 +106,15 @@ int write_block(int input_disk_image_fd, uint32_t block_number, void *data, size
 
     if (ret_pwrite < 0) {
         fprintf(stderr, "ERROR: failed to write data into block #%" PRIu32 " with data size %zu at offset %" PRIu32 ": %s\n", block_number, data_size, (uint32_t)final_offset, strerror(errno));
-        goto error_handler;
+        return -EIO;
     }
 
     if ((uint32_t)ret_pwrite != data_size) {
         fprintf(stderr, "ERROR: failed to write data into block #%" PRIu32 " with data size %zu at offset %" PRIu32 ": %" PRIu32 " byte(s) returned\n", block_number, data_size, (uint32_t)final_offset, (uint32_t)ret_pwrite);
-        goto error_handler;
+        return -EIO;
     }
 
     return 1;
-
-error_handler:
-    return -EIO;
 }
 
 int zero_block(int input_disk_image_fd, uint32_t block_number) {
@@ -130,13 +124,10 @@ int zero_block(int input_disk_image_fd, uint32_t block_number) {
     int ret_write_block = write_block(input_disk_image_fd, block_number, zero, BLOCKSIZE, 0);
     if (ret_write_block < 0) {
         fprintf(stderr, "ERROR: failed to write zero block on block number %" PRIu32 "\n", block_number);
-        goto error_handler;
+        return -EIO;
     }
 
     return 1;
-
-error_handler:
-    return -EIO;
 }
 
 int read_superblock(int input_disk_image_fd, struct superblock *input_super_block_buffer) {
@@ -145,26 +136,23 @@ int read_superblock(int input_disk_image_fd, struct superblock *input_super_bloc
     int ret_read_superblock = read_block(input_disk_image_fd, 1, input_super_block_buffer, sizeof(struct superblock), 0);
     if (ret_read_superblock < 0) {
         fprintf(stderr, "ERROR: failed to read superblock\n");
-        goto error_handler;
+        return -EIO;
     }
 
     /* check superblock magic number */
     if (input_super_block_buffer->s_magic != SUPERBLOCK_MAGIC_NUMBER) {
         fprintf(stderr, "ERROR: magic number in superblock is not valid\n");
-        goto error_handler;
+        return -EIO;
     }
 
     return 1;
-
-error_handler:
-    return -EIO;
 }
 
 int write_superblock(int input_disk_image_fd, struct superblock *input_super_block) {
     /* check superblock magic number */
     if (input_super_block->s_magic != SUPERBLOCK_MAGIC_NUMBER) {
         fprintf(stderr, "ERROR: magic number in superblock is not valid\n");
-        goto error_handler;
+        return -EIO;
     }
 
     /* update superblock modification flag and timestamp */
@@ -174,20 +162,17 @@ int write_superblock(int input_disk_image_fd, struct superblock *input_super_blo
     int ret_write_superblock = write_block(input_disk_image_fd, 1, input_super_block, sizeof(struct superblock), 0);
     if (ret_write_superblock < 0) {
         fprintf(stderr, "ERROR: failed to write superblock\n");
-        goto error_handler;
+        return -EIO;
     }
 
     return 1;
-
-error_handler:
-    return -EIO;
 }
 
 int read_disk_inode(int input_disk_image_fd, struct superblock *input_super_block, uint32_t input_disk_inode_number, struct disk_inode *input_disk_inode_buffer) {
     /* if input disk inode number is invalid, bail out */
     if (input_disk_inode_number == 0 || input_disk_inode_number >= input_super_block->s_ninodes) {
         fprintf(stderr, "ERROR: input disk inode number is invalid\n");
-        goto error_handler;
+        return -EINVAL;
     }
 
     uint32_t disk_inode_block = 2 + input_super_block->s_inode_map_size + input_super_block->s_block_map_size;
@@ -204,20 +189,17 @@ int read_disk_inode(int input_disk_image_fd, struct superblock *input_super_bloc
 
     if (ret_read_block < 0) {
         fprintf(stderr, "ERROR: failed to read disk inode block %" PRIu32 "\n", disk_inode_block);
-        goto error_handler;
+        return -EIO;
     }
 
     return 1;
-
-error_handler:
-    return -EIO;
 }
 
 int write_disk_inode(int input_disk_image_fd, struct superblock *input_super_block, uint32_t input_disk_inode_number, struct disk_inode *input_disk_inode) {
     /* if input disk inode number is invalid, bail out */
     if (input_disk_inode_number == 0 || input_disk_inode_number >= input_super_block->s_ninodes) {
         fprintf(stderr, "ERROR: input disk inode number is invalid\n");
-        goto error_handler;
+        return -EINVAL;
     }
 
     uint32_t disk_inode_block = 2 + input_super_block->s_inode_map_size + input_super_block->s_block_map_size;
@@ -234,13 +216,10 @@ int write_disk_inode(int input_disk_image_fd, struct superblock *input_super_blo
 
     if (ret_write_block < 0) {
         fprintf(stderr, "ERROR: failed to write disk inode block %" PRIu32 "\n", disk_inode_block);
-        goto error_handler;
+        return -EIO;
     }
 
     return 1;
-
-error_handler:
-    return -EIO;
 }
 
 uint32_t bmap(int input_disk_image_fd, struct superblock *input_super_block, struct inode *input_inode, uint32_t input_logical_block_number) {
