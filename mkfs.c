@@ -13,7 +13,7 @@
 #include "inode.h"
 #include "superblock.h"
 
-#define VERSION "0.0.3"
+#define VERSION "0.0.4"
 #define DISK_IMAGE_FILENAME "pangyafs.img"
 #define DISK_IMAGE_FILE_MODE 0644
 
@@ -38,15 +38,12 @@ static int init_image(int input_disk_image_fd, uint32_t input_image_size) {
     for (uint32_t i = 0; i < input_image_size; ++i) {
         int ret_write_block = write_block(input_disk_image_fd, i, zero_block, sizeof(zero_block), 0);
         if (ret_write_block < 0) {
-            fprintf(stderr, "ERROR: failed to zero disk image file %s in %" PRIu32 "-th block\n", DISK_IMAGE_FILENAME, i);
-            goto error_handler;
+            fprintf(stderr, "ERROR: failed to zero disk image file %s in %" PRIu32 "-th block: %s\n", DISK_IMAGE_FILENAME, i, strerror(-ret_write_block));
+            return -EIO;
         }
     }
 
     return 1;
-
-error_handler:
-    return -1;
 }
 
 static void print_init_image_info(uint32_t input_image_size) {
@@ -69,8 +66,8 @@ static int init_inode(int input_disk_image_fd, uint32_t block_number, struct dis
 
             int ret_write_block = write_block(input_disk_image_fd, i, input_disk_inode, sizeof(struct disk_inode), block_offset);
             if (ret_write_block < 0) {
-                fprintf(stderr, "ERROR: failed to write inode data on %zu-th item at %" PRIu32 "-th disk block\n", j, i);
-                goto error_handler;
+                fprintf(stderr, "ERROR: failed to write inode data on %zu-th item at %" PRIu32 "-th disk block: %s\n", j, i, strerror(-ret_write_block));
+                return -EIO;
             }
         }
     }
@@ -81,16 +78,13 @@ static int init_inode(int input_disk_image_fd, uint32_t block_number, struct dis
             off_t block_offset = (off_t)sizeof(struct disk_inode) * (off_t)j;
             int ret_write_block = write_block(input_disk_image_fd, (uint32_t)(block_number + input_inode_block_size), input_disk_inode, sizeof(struct disk_inode), block_offset);
             if (ret_write_block < 0) {
-                fprintf(stderr, "ERROR: failed to write inode data on %zu-th item at %" PRIu32 "-th disk block\n", j, (uint32_t)(block_number + input_inode_block_size));
-                goto error_handler;
+                fprintf(stderr, "ERROR: failed to write inode data on %zu-th item at %" PRIu32 "-th disk block: %s\n", j, (uint32_t)(block_number + input_inode_block_size), strerror(-ret_write_block));
+                return -EIO;
             }
         }
     }
 
     return 1;
-
-error_handler:
-    return -1;
 }
 
 static void print_init_fs_info(struct superblock *input_super_block) {
@@ -209,7 +203,7 @@ int main(int argc, char *argv[]) {
 
     int ret_init_image = init_image(disk_image_fd, image_size);
     if (ret_init_image < 0) {
-        fprintf(stderr, "ERROR: failed to initialized PangYa filesystem image %s with size %" PRIu32 " KB\n", DISK_IMAGE_FILENAME, image_size);
+        fprintf(stderr, "ERROR: failed to initialized PangYa filesystem image %s with size %" PRIu32 " KB: %s\n", DISK_IMAGE_FILENAME, image_size, strerror(-ret_init_image));
         goto error_handler;
     }
 
@@ -257,7 +251,7 @@ int main(int argc, char *argv[]) {
     /* write inode data from block after block #0 + block #1 + inode bitmap block(s) + block bitmap block(s) */
     int ret_init_inode = init_inode(disk_image_fd, 2 + sb.s_inode_map_size + sb.s_block_map_size, &dinode, inode_size, get_inode_per_block());
     if (ret_init_inode < 0) {
-        fprintf(stderr, "ERROR: failed to write inode data\n");
+        fprintf(stderr, "ERROR: failed to write inode data: %s\n", strerror(-ret_init_inode));
         goto error_handler;
     }
 
@@ -276,7 +270,7 @@ int main(int argc, char *argv[]) {
     /* write root_dir in 1st data block */
     ret_write_block = write_block(disk_image_fd, data_block_start, root_dir, sizeof(root_dir), 0);
     if (ret_write_block < 0) {
-        fprintf(stderr, "ERROR: failed to write root directory data\n");
+        fprintf(stderr, "ERROR: failed to write root directory data: %s\n", strerror(-ret_write_block));
         goto error_handler;
     }
 
@@ -292,7 +286,7 @@ int main(int argc, char *argv[]) {
     /* write root_inode in inode #1 */
     ret_write_block = write_block(disk_image_fd, 2 + sb.s_inode_map_size + sb.s_block_map_size, &root_inode, sizeof(root_inode), (off_t)sizeof(struct disk_inode) * (off_t)ROOT_INODE);
     if (ret_write_block < 0) {
-        fprintf(stderr, "ERROR: failed to write root inode data\n");
+        fprintf(stderr, "ERROR: failed to write root inode data: %s\n", strerror(-ret_write_block));
         goto error_handler;
     }
 
@@ -304,7 +298,7 @@ int main(int argc, char *argv[]) {
     for (uint32_t inode_index = 0; inode_index <= ROOT_INODE; ++inode_index) {
         ret_inode_bitmap_set = bitmap_set(disk_image_fd, &sb, inode_index, INODE_BITMAP);
         if (ret_inode_bitmap_set < 0) {
-            fprintf(stderr, "ERROR: failed to write inode bitmap on inode %" PRIu32 "\n", inode_index);
+            fprintf(stderr, "ERROR: failed to write inode bitmap on inode %" PRIu32 ": %s\n", inode_index, strerror(-ret_inode_bitmap_set));
             goto error_handler;
         }
     }
@@ -318,7 +312,7 @@ int main(int argc, char *argv[]) {
     for (uint32_t block_index = 0; block_index <= data_block_start; ++block_index) {
         ret_block_bitmap_set = bitmap_set(disk_image_fd, &sb, block_index, BLOCK_BITMAP);
         if (ret_block_bitmap_set < 0) {
-            fprintf(stderr, "ERROR: failed to write block bitmap on block %" PRIu32 "\n", block_index);
+            fprintf(stderr, "ERROR: failed to write block bitmap on block %" PRIu32 ": %s\n", block_index, strerror(-ret_block_bitmap_set));
             goto error_handler;
         }
     }
