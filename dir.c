@@ -155,9 +155,9 @@ int add_entry(int input_disk_image_fd, struct superblock *input_super_block, str
                     }
 
                     /* increase parent directory space size */
-                    size_t current_entry_postition = (logical_block * (dirent_entries * sizeof(struct dirent))) + (i + 1) * sizeof(struct dirent);
-                    if (current_entry_postition > input_parent_inode->i_size0) {
-                        input_parent_inode->i_size0 = (uint32_t)current_entry_postition;
+                    size_t current_entry_position = (logical_block * (dirent_entries * sizeof(struct dirent))) + (i + 1) * sizeof(struct dirent);
+                    if (current_entry_position > input_parent_inode->i_size0) {
+                        input_parent_inode->i_size0 = (uint32_t)current_entry_position;
                     }
 
                     /* mark parent inode as dirty */
