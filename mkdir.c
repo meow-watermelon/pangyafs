@@ -14,7 +14,7 @@
 #include "fs_utils.h"
 #include "superblock.h"
 
-#define VERSION "0.0.2"
+#define VERSION "0.0.3"
 
 /* command line options */
 static int opt_flag_f = 0;
@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
     /* allocate block for dirents */
     int32_t dir_block_number = alloc_block(disk_image_fd, &sb);
     if (dir_block_number < 0) {
-        fprintf(stderr, "ERROR: failed to allocate block for directory %s\n", pathname);
+        fprintf(stderr, "ERROR: failed to allocate block for directory %s: %s\n", pathname, strerror(-(int)dir_block_number));
         goto error_handler;
     }
 

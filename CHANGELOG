@@ -19,3 +19,9 @@
 
 04/01/2026 - 0.0.4
   * issue #3 - Standardize return values across core filesystem functions
+
+04/02/2026 - 0.0.5
+  * issue #4 - Include errno description string in error output
+  * application change
+    * mkfs.c - 0.0.4: include errno description string in error output
+    * mkdir.c - 0.0.3: include errno description string in error output
