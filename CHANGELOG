@@ -25,3 +25,8 @@
   * application change
     * mkfs.c - 0.0.4: include errno description string in error output
     * mkdir.c - 0.0.3: include errno description string in error output
+
+05/13/2026 - 0.0.6
+  * issue #5 - Add filesystem stress-test and regression utility
+  * application change
+    * stress_test.sh - n/a version: initial commit (AI-generated)
