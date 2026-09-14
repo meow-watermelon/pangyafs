@@ -1,4 +1,4 @@
-CC = gcc
+CC ?= cc
 CFLAGS = -g -Wall -Wextra -Wpedantic -Wconversion -Wdouble-promotion -Wunused -Wshadow -Wsign-conversion -fsanitize=undefined
 INCLUDES = -I.
 

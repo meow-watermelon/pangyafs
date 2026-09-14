@@ -30,3 +30,8 @@
   * issue #5 - Add filesystem stress-test and regression utility
   * application change
     * stress_test.sh - n/a version: initial commit (AI-generated)
+
+09/13/2026 - 0.0.7
+  * issue $6 - Tune Makefile to use default C compiler
+  * application change
+    * n/a
