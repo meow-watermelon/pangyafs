@@ -14,7 +14,7 @@
 #include "fs_utils.h"
 #include "superblock.h"
 
-#define VERSION "0.0.3"
+#define VERSION "0.0.4"
 
 /* command line options */
 static int opt_flag_f = 0;
@@ -101,6 +101,12 @@ int main(int argc, char *argv[]) {
     /* read superblock */
     if (read_superblock(disk_image_fd, &sb) < 0) {
         fprintf(stderr, "ERROR: failed to read superblock from disk image file %s\n", filename);
+        goto error_handler;
+    }
+
+    /* check filesystem status flag */
+    if (sb.s_ronly) {
+        fprintf(stderr, "ERROR: filesystem is read-only on disk image file %s\n", filename);
         goto error_handler;
     }
 
@@ -216,10 +222,12 @@ error_handler:
         dir_inode->i_nlink = 0;
     }
 
-    put_inode(disk_image_fd, &sb, dir_inode);
-    put_inode(disk_image_fd, &sb, parent_dir_inode);
-    free(dir_name_copy);
-    free(base_name_copy);
+    if (!sb.s_ronly) {
+        put_inode(disk_image_fd, &sb, dir_inode);
+        put_inode(disk_image_fd, &sb, parent_dir_inode);
+        free(dir_name_copy);
+        free(base_name_copy);
+    }
 
     if (disk_image_fd >= 0) {
         close(disk_image_fd);

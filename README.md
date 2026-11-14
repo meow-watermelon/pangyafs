@@ -55,6 +55,7 @@ As an educational project focusing on core fundamentals, PangYa FS currently ope
 |--|--|
 | `mkfs.pangya` | Formats a new disk image with custom inode and size parameters |
 | `df.pangya` | Reports filesystem usage |
+| `chfs.pangya` | Change filesystem status |
 | `stat.pangya` | Displays detailed inode-level metadata for any path |
 | `ls.pangya` | Lists directory contents with metadata (Inode, Link Count, Size, Type) |
 | `mkdir.pangya` | Creates directory |
@@ -103,6 +104,7 @@ number of inode(s): 100
 inode list size(block): 8
 inode bitmap size(block): 1
 block bitmap size(block): 1
+filesystem status: read-write
 
 ===== INODE USAGE INFORMATION =====
       Inodes    IUsed    IFree  IUse%
@@ -151,10 +153,15 @@ $ ./ls.pangya -f pangyafs.img /
            1    2           60   DIR              .
            1    2           60   DIR             ..
 
+# change filesystem status
+$ ./chfs.pangya -f pangyafs.img -r
+$ ./mkdir.pangya -f pangyafs.img /dir2
+ERROR: filesystem is read-only on disk image file pangyafs.img
 ```
 
 ## Roadmap & Future Implementation
 - [x] Fixed-Width Integer Cleanup for Cross-Platform Safety
+- [x] Filesystem image read-only mode support
 - [ ] Indirect Block Support (Files > 16KB)
 - [ ] Hard Link Support & Reference Counting
 - [ ] Symbolic Links

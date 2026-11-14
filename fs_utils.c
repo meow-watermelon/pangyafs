@@ -74,7 +74,7 @@ uint32_t get_block_bitmap_block_size(uint32_t input_image_size) {
 }
 
 int badblock(struct superblock *input_super_block, uint32_t input_block_number) {
-    /* block_number should not be within (block #0 + block #1(super block) + (inode + block) bitmap blocks + inode block(s)) or over total number of blocks */
+    /* block_number should not be within (block #0 + block #1(superblock) + (inode + block) bitmap blocks + inode block(s)) or over total number of blocks */
     if (input_block_number < 2 + input_super_block->s_inode_map_size + input_super_block->s_block_map_size + input_super_block->s_isize || input_block_number >= input_super_block->s_fsize) {
         return 1;
     }

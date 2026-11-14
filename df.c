@@ -12,7 +12,7 @@
 #include "fs_utils.h"
 #include "superblock.h"
 
-#define VERSION "0.0.2"
+#define VERSION "0.0.3"
 
 /* command line options */
 static int opt_flag_f = 0;
@@ -35,6 +35,7 @@ static void print_superblock_info(struct superblock *input_super_block) {
     printf("inode list size(block): %" PRIu32 "\n", input_super_block->s_isize);
     printf("inode bitmap size(block): %" PRIu32 "\n", input_super_block->s_inode_map_size);
     printf("block bitmap size(block): %" PRIu32 "\n", input_super_block->s_block_map_size);
+    printf("filesystem status: %s\n", input_super_block->s_ronly ? "read-only" : "read-write");
     printf("\n");
 }
 

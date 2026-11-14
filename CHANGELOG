@@ -32,6 +32,17 @@
     * stress_test.sh - n/a version: initial commit (AI-generated)
 
 09/13/2026 - 0.0.7
-  * issue $6 - Tune Makefile to use default C compiler
+  * issue #6 - Tune Makefile to use default C compiler
   * application change
     * n/a
+
+11/14/2026 - 0.0.8
+  * issue #7 - Add filesystem-level read-only support
+  * application change
+    * chfs.c - 0.0.1: initial commit
+    * mkfs.c - 0.0.5: add s_ronly flag support
+    * df.c - 0.0.3: display filesystem status
+    * rm.c - 0.0.3: add filesystem status check
+    * cp.c - 0.0.3: add filesystem status check
+    * mkdir.c - 0.0.4: add filesystem status check
+    * stress_test.sh - n/a version: add filesystem status change tests (AI-generated)

@@ -11,14 +11,19 @@
 /* superblock magic number */
 #define SUPERBLOCK_MAGIC_NUMBER 0x10102024U
 
+/* read-write / read-only flag */
+#define READ_WRITE 0
+#define READ_ONLY 1
+
 struct superblock {
     uint32_t s_isize; /* size in blocks of inode list */
     uint32_t s_fsize; /* size in blocks of entire volume */
     uint32_t s_ninodes; /* total number of inodes */
     uint32_t s_inode_map_size; /* size in blocks of inode bitmap */
     uint32_t s_block_map_size; /* size in blocks of block bitmap */
-    uint8_t s_fmod; /* super block modified flag */
-    uint32_t s_magic; /* super block magic number */
+    uint8_t s_fmod; /* superblock modified flag */
+    uint32_t s_magic; /* superblock magic number */
+    uint8_t s_ronly; /* filesystem read-only flag */
     time_t s_time; /* current date of last update */
 };
 
