@@ -8,7 +8,8 @@
 # command output to ensure results are as expected.
 #
 # Requirements:
-#  - mkfs.pangya, df.pangya, mkdir.pangya, cp.pangya, stat.pangya, ls.pangya, rm.pangya
+#  - mkfs.pangya, chfs.pangya, df.pangya, mkdir.pangya, cp.pangya,
+#    stat.pangya, ls.pangya, rm.pangya
 #  - All tools should be built via 'make' in the pangyafs repository
 ################################################################################
 
@@ -108,9 +109,155 @@ test_mkfs() {
     return 0
 }
 
-# Step 2: Check initial filesystem status
+# Step 2: Verify read-only and read-write modes
+test_chfs_modes() {
+    log_test "Step 2: Verifying chfs.pangya read-only and read-write modes..."
+
+    local df_output
+    local command_output
+    local seed_dir="/chfs-seed"
+    local seed_file="/chfs-seed/seed.txt"
+    local readonly_test_dir="/chfs-ro-test"
+    local readonly_test_file="/chfs-ro.txt"
+    local readwrite_test_dir="/chfs-rw-test"
+
+    printf '%s\n' "PangYa chfs read-only test data" > "$TEST_FILE"
+
+    if ! command_output=$(./mkdir.pangya -f "$TEST_IMAGE" "$seed_dir" 2>&1); then
+        log_fail "Failed to create directory for read-only rm test"
+        echo "$command_output" | log_output
+        return 1
+    fi
+
+    if ! command_output=$(./cp.pangya -f "$TEST_IMAGE" "$TEST_FILE" "$seed_file" 2>&1); then
+        log_fail "Failed to create file for read-only rm test"
+        echo "$command_output" | log_output
+        return 1
+    fi
+
+    if ! command_output=$(./chfs.pangya -f "$TEST_IMAGE" -r 2>&1); then
+        log_fail "chfs.pangya -r command failed"
+        echo "$command_output" | log_output
+        return 1
+    fi
+
+    if ! df_output=$(./df.pangya -f "$TEST_IMAGE" 2>&1); then
+        log_fail "df.pangya failed after enabling read-only mode"
+        return 1
+    fi
+
+    echo "$df_output" | log_output
+
+    if ! echo "$df_output" | grep -q "filesystem status: read-only"; then
+        log_fail "Filesystem was not marked read-only after chfs.pangya -r"
+        return 1
+    fi
+
+    log_info "  Command (expected to fail): ./mkdir.pangya -f $TEST_IMAGE $readonly_test_dir"
+    if command_output=$(./mkdir.pangya -f "$TEST_IMAGE" "$readonly_test_dir" 2>&1); then
+        log_fail "mkdir.pangya unexpectedly succeeded while filesystem was read-only"
+        echo "$command_output" | log_output
+        return 1
+    fi
+    echo "$command_output" | log_output
+    if ! echo "$command_output" | grep -qi "read-only"; then
+        log_fail "mkdir.pangya failed for a reason other than read-only mode"
+        return 1
+    fi
+
+    log_info "  Command (expected to fail): ./cp.pangya -f $TEST_IMAGE $TEST_FILE $readonly_test_file"
+    if command_output=$(./cp.pangya -f "$TEST_IMAGE" "$TEST_FILE" "$readonly_test_file" 2>&1); then
+        log_fail "cp.pangya unexpectedly succeeded while filesystem was read-only"
+        echo "$command_output" | log_output
+        return 1
+    fi
+    echo "$command_output" | log_output
+    if ! echo "$command_output" | grep -qi "read-only"; then
+        log_fail "cp.pangya failed for a reason other than read-only mode"
+        return 1
+    fi
+
+    log_info "  Command (expected to fail): ./rm.pangya -f $TEST_IMAGE $seed_file"
+    if command_output=$(./rm.pangya -f "$TEST_IMAGE" "$seed_file" 2>&1); then
+        log_fail "rm.pangya unexpectedly succeeded while filesystem was read-only"
+        echo "$command_output" | log_output
+        return 1
+    fi
+    echo "$command_output" | log_output
+    if ! echo "$command_output" | grep -qi "read-only"; then
+        log_fail "rm.pangya failed for a reason other than read-only mode"
+        return 1
+    fi
+
+    if ./ls.pangya -f "$TEST_IMAGE" "/" 2>&1 | grep -q "chfs-ro-test"; then
+        log_fail "Read-only mkdir.pangya attempt changed the filesystem"
+        return 1
+    fi
+
+    if ./ls.pangya -f "$TEST_IMAGE" "/" 2>&1 | grep -q "chfs-ro.txt"; then
+        log_fail "Read-only cp.pangya attempt changed the filesystem"
+        return 1
+    fi
+
+    if ! ./ls.pangya -f "$TEST_IMAGE" "$seed_dir" 2>&1 | grep -q "seed.txt"; then
+        log_fail "Read-only rm.pangya attempt changed the filesystem"
+        return 1
+    fi
+
+    if ! command_output=$(./chfs.pangya -f "$TEST_IMAGE" -w 2>&1); then
+        log_fail "chfs.pangya -w command failed"
+        echo "$command_output" | log_output
+        return 1
+    fi
+
+    if ! df_output=$(./df.pangya -f "$TEST_IMAGE" 2>&1); then
+        log_fail "df.pangya failed after enabling read-write mode"
+        return 1
+    fi
+
+    echo "$df_output" | log_output
+
+    if ! echo "$df_output" | grep -q "filesystem status: read-write"; then
+        log_fail "Filesystem was not marked read-write after chfs.pangya -w"
+        return 1
+    fi
+
+    if ! command_output=$(./mkdir.pangya -f "$TEST_IMAGE" "$readwrite_test_dir" 2>&1); then
+        log_fail "Write failed after enabling read-write mode"
+        echo "$command_output" | log_output
+        return 1
+    fi
+
+    if ! ./ls.pangya -f "$TEST_IMAGE" "/" 2>&1 | grep -q "chfs-rw-test"; then
+        log_fail "Read-write test directory was not created"
+        return 1
+    fi
+
+    if ! command_output=$(./rm.pangya -f "$TEST_IMAGE" "$readwrite_test_dir" 2>&1); then
+        log_fail "Failed to remove read-write test directory"
+        echo "$command_output" | log_output
+        return 1
+    fi
+
+    if ! command_output=$(./rm.pangya -f "$TEST_IMAGE" "$seed_file" 2>&1); then
+        log_fail "Failed to remove seeded file after enabling read-write mode"
+        echo "$command_output" | log_output
+        return 1
+    fi
+
+    if ! command_output=$(./rm.pangya -f "$TEST_IMAGE" "$seed_dir" 2>&1); then
+        log_fail "Failed to remove seeded directory after enabling read-write mode"
+        echo "$command_output" | log_output
+        return 1
+    fi
+
+    log_pass "Read-only mode blocks mkdir, cp, and rm; read-write mode allows writes"
+    return 0
+}
+
+# Step 3: Check initial filesystem status
 test_df_initial() {
-    log_test "Step 2: Checking initial filesystem status..."
+    log_test "Step 3: Checking initial filesystem status..."
     
     local df_output
     if ! df_output=$(./df.pangya -f "$TEST_IMAGE" 2>&1); then
@@ -140,9 +287,9 @@ test_df_initial() {
     return 0
 }
 
-# Step 3: Create directories
+# Step 4: Create directories
 test_mkdir() {
-    log_test "Step 3: Creating test directories..."
+    log_test "Step 4: Creating test directories..."
     
     # Create dir1
     if ! ./mkdir.pangya -f "$TEST_IMAGE" "/dir1" 2>&1 > /dev/null; then
@@ -180,9 +327,9 @@ test_mkdir() {
     fi
 }
 
-# Step 4: Create and copy test files
+# Step 5: Create and copy test files
 test_cp() {
-    log_test "Step 4: Creating and copying test files..."
+    log_test "Step 5: Creating and copying test files..."
     
     # Create test content file
     cat > "$TEST_FILE" << 'EOF'
@@ -233,9 +380,9 @@ EOF
     fi
 }
 
-# Step 5: List directories and inspect file metadata
+# Step 6: List directories and inspect file metadata
 test_stat_and_ls() {
-    log_test "Step 5: Listing directories and inspecting file metadata..."
+    log_test "Step 6: Listing directories and inspecting file metadata..."
     
     # List root directory
     log_info "  Listing root directory (/)"
@@ -276,9 +423,9 @@ test_stat_and_ls() {
     return 0
 }
 
-# Step 6: Check space usage after writes
+# Step 7: Check space usage after writes
 test_df_after_write() {
-    log_test "Step 6: Checking filesystem space usage after file operations..."
+    log_test "Step 7: Checking filesystem space usage after file operations..."
     
     local df_output
     if ! df_output=$(./df.pangya -f "$TEST_IMAGE" 2>&1); then
@@ -330,9 +477,9 @@ test_df_after_write() {
     return 0
 }
 
-# Step 7: Remove files and directories
+# Step 8: Remove files and directories
 test_rm() {
-    log_test "Step 7: Removing files and directories..."
+    log_test "Step 8: Removing files and directories..."
     
     # Remove file from dir1
     if ! ./rm.pangya -f "$TEST_IMAGE" "/dir1/file1.txt" 2>&1 > /dev/null; then
@@ -372,9 +519,9 @@ test_rm() {
     return 0
 }
 
-# Step 8: Verify filesystem is clean
+# Step 9: Verify filesystem is clean
 test_df_final() {
-    log_test "Step 8: Verifying filesystem is clean..."
+    log_test "Step 9: Verifying filesystem is clean..."
     
     local df_output
     if ! df_output=$(./df.pangya -f "$TEST_IMAGE" 2>&1); then
@@ -419,7 +566,7 @@ main() {
     echo ""
     
     # Verify tools are available
-    for tool in mkfs.pangya df.pangya mkdir.pangya cp.pangya stat.pangya ls.pangya rm.pangya; do
+    for tool in mkfs.pangya chfs.pangya df.pangya mkdir.pangya cp.pangya stat.pangya ls.pangya rm.pangya; do
         if [ ! -f "./$tool" ]; then
             log_fail "Required tool not found: $tool"
             log_info "Please build the project with 'make' first"
@@ -429,6 +576,7 @@ main() {
     
     # Run all tests
     test_mkfs || return 1
+    test_chfs_modes || return 1
     test_df_initial || return 1
     test_mkdir || return 1
     test_cp || return 1
