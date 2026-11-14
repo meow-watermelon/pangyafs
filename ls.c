@@ -14,7 +14,7 @@
 #include "fs_utils.h"
 #include "superblock.h"
 
-#define VERSION "0.0.2"
+#define VERSION "0.0.3"
 
 /* command line options */
 static int opt_flag_f = 0;
@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
     char filename[PATH_MAX];
     int disk_image_fd = -1;
     struct superblock sb;
+    memset(&sb, 0, sizeof(struct superblock));
     char *pathname = "/";
 
     /* suppress default getopt error messages */

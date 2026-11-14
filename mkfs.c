@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
 
     /* initialize superblock */
     struct superblock sb;
-    memset(&sb, 0, sizeof(sb));
+    memset(&sb, 0, sizeof(struct superblock));
     sb.s_fsize = image_size;
     sb.s_isize = (uint32_t)get_inode_block_size(inode_size);
     sb.s_ninodes = inode_size;
