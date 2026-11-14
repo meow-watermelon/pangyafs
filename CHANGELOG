@@ -46,3 +46,14 @@
     * cp.c - 0.0.3: add filesystem status check
     * mkdir.c - 0.0.4: add filesystem status check
     * stress_test.sh - n/a version: add filesystem status change tests (AI-generated)
+
+11/14/2026 - 0.0.9
+  * issue #8 - Initialize superblock struct
+  * application change
+    * chfs.c - 0.0.2: initialize superblock struct
+    * cp.c - 0.0.4: initialize superblock struct
+    * df.c - 0.0.4: initialize superblock struct
+    * ls.c - 0.0.3: initialize superblock struct
+    * mkdir.c - 0.0.5: initialize superblock struct
+    * rm.c - 0.0.4: initialize superblock struct
+    * stat.c - 0.0.3: initialize superblock struct
