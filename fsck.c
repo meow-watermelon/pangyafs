@@ -87,6 +87,7 @@ int main(int argc, char *argv[]) {
     unsigned int inode_fatal = 0;
     unsigned int block_error = 0;
     unsigned int block_fatal = 0;
+    unsigned int total_failure = 0;
 
     /* suppress default getopt error messages */
     opterr = 0;
@@ -153,6 +154,12 @@ int main(int argc, char *argv[]) {
     check_superblock(&sb, &superblock_error, &superblock_fatal);
     printf("\n");
     print_stats(superblock_error, superblock_fatal);
+
+    total_failure = superblock_error + superblock_fatal + inode_error + inode_fatal + block_error + block_fatal;
+
+    if (total_failure > 0) {
+        exit(EXIT_FAILURE);
+    }
 
     exit(EXIT_SUCCESS);
 
