@@ -45,9 +45,14 @@ CHFS_SRCS = chfs.c
 CHFS_OBJS = $(CHFS_SRCS:.c=.o) $(COMMON_OBJS)
 CHFS_TARGET = chfs.pangya
 
+# fsck
+FSCK_SRCS = fsck.c
+FSCK_OBJS = $(FSCK_SRCS:.c=.o) $(COMMON_OBJS)
+FSCK_TARGET = fsck.pangya
+
 # TARGETS
-TARGETS = $(MKFS_TARGET) $(DF_TARGET) $(LS_TARGET) $(STAT_TARGET) $(MKDIR_TARGET) $(RM_TARGET) $(CP_TARGET) $(CHFS_TARGET)
-OBJS = $(COMMON_OBJS) $(MKFS_SRCS:.c=.o) $(DF_SRCS:.c=.o) $(LS_SRCS:.c=.o) $(STAT_SRCS:.c=.o) $(MKDIR_SRCS:.c=.o) $(RM_SRCS:.c=.o) $(CP_SRCS:.c=.o) $(CHFS_SRCS:.c=.o)
+TARGETS = $(MKFS_TARGET) $(DF_TARGET) $(LS_TARGET) $(STAT_TARGET) $(MKDIR_TARGET) $(RM_TARGET) $(CP_TARGET) $(CHFS_TARGET) $(FSCK_TARGET)
+OBJS = $(COMMON_OBJS) $(MKFS_SRCS:.c=.o) $(DF_SRCS:.c=.o) $(LS_SRCS:.c=.o) $(STAT_SRCS:.c=.o) $(MKDIR_SRCS:.c=.o) $(RM_SRCS:.c=.o) $(CP_SRCS:.c=.o) $(CHFS_SRCS:.c=.o) $(FSCK_SRCS:.c=.o)
 
 .PHONY: all clean
 
@@ -75,6 +80,9 @@ $(CP_TARGET): $(CP_OBJS)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
 
 $(CHFS_TARGET): $(CHFS_OBJS)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
+
+$(FSCK_TARGET): $(FSCK_OBJS)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^
 
 %.o: %.c
