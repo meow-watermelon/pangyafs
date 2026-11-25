@@ -66,6 +66,26 @@ static void check_superblock(struct superblock *input_super_block, unsigned int 
     }
 }
 
+static void check_inode(int input_disk_image_fd, struct superblock *input_super_block, uint32_t input_disk_inode_number, struct disk_inode *input_disk_inode_buffer, unsigned int *error_count) {
+    int ret_read_disk_inode = read_disk_inode(input_disk_image_fd, input_super_block, input_disk_inode_number, input_disk_inode_buffer);
+    if (ret_read_disk_inode < 0) {
+        return;
+    }
+
+    /* check inode format */
+    if (input_disk_inode_buffer->i_mode != 0 && input_disk_inode_buffer->i_mode != (IALLOC | IFREG) && input_disk_inode_buffer->i_mode != (IALLOC | IFDIR)) {
+        fprintf(stderr, "ERROR: inode %" PRIu32 " is in invalid mode\n", input_disk_inode_number);
+
+        ++(*error_count);
+    }
+
+    if (input_disk_inode_buffer->i_size0 > NDIRECT * BLOCKSIZE) {
+        fprintf(stderr, "ERROR: inode %" PRIu32 " has invalid file size: %" PRIu32 "\n", input_disk_inode_number, input_disk_inode_buffer->i_size0);
+
+        ++(*error_count);
+    }
+}
+
 int main(int argc, char *argv[]) {
     /* define command line options */
     char *short_opts = "f:h";
@@ -84,9 +104,7 @@ int main(int argc, char *argv[]) {
     unsigned int superblock_error = 0;
     unsigned int superblock_fatal = 0;
     unsigned int inode_error = 0;
-    unsigned int inode_fatal = 0;
     unsigned int block_error = 0;
-    unsigned int block_fatal = 0;
     unsigned int total_failure = 0;
 
     /* suppress default getopt error messages */
@@ -155,7 +173,17 @@ int main(int argc, char *argv[]) {
     printf("\n");
     print_stats(superblock_error, superblock_fatal);
 
-    total_failure = superblock_error + superblock_fatal + inode_error + inode_fatal + block_error + block_fatal;
+    /* bail out if any fatal is found in superblock check stage. filesystem layout is broken */
+    if (superblock_fatal > 0) {
+        fprintf(stderr, "ERROR: superblock has fatal failure(s), cannot move forward\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* inode check */
+
+    /* disk block check */
+
+    total_failure = superblock_error + inode_error + block_error;
 
     if (total_failure > 0) {
         exit(EXIT_FAILURE);
