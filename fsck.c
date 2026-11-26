@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "allocator.h"
+#include "bitmap.h"
 #include "dir.h"
 #include "fs_utils.h"
 #include "superblock.h"
@@ -27,8 +27,11 @@ static void usage(void) {
     );
 }
 
-static void print_stats(unsigned int error_count, unsigned int fatal_count) {
+static void print_error_stats(unsigned int error_count) {
     printf("Error Count: %u\n", error_count);
+}
+
+static void print_fatal_stats(unsigned int fatal_count) {
     printf("Fatal Count: %u\n", fatal_count);
 }
 
@@ -66,21 +69,73 @@ static void check_superblock(struct superblock *input_super_block, unsigned int 
     }
 }
 
-static void check_inode(int input_disk_image_fd, struct superblock *input_super_block, uint32_t input_disk_inode_number, struct disk_inode *input_disk_inode_buffer, unsigned int *error_count) {
-    int ret_read_disk_inode = read_disk_inode(input_disk_image_fd, input_super_block, input_disk_inode_number, input_disk_inode_buffer);
-    if (ret_read_disk_inode < 0) {
+static void check_inode(int input_disk_image_fd, struct superblock *input_super_block, unsigned int *error_count) {
+    int32_t superblock_used_inodes = count_bits(input_disk_image_fd, input_super_block, INODE_BITMAP);
+    if (superblock_used_inodes < 0) {
+        fprintf(stderr, "ERROR: failed to count inode bitmap bits\n");
+
+        ++(*error_count);
+
         return;
     }
 
-    /* check inode format */
-    if (input_disk_inode_buffer->i_mode != 0 && input_disk_inode_buffer->i_mode != (IALLOC | IFREG) && input_disk_inode_buffer->i_mode != (IALLOC | IFDIR)) {
-        fprintf(stderr, "ERROR: inode %" PRIu32 " is in invalid mode\n", input_disk_inode_number);
+    /* inode number 0 is reserved */
+    int32_t scan_used_inodes = 1;
 
-        ++(*error_count);
+    /* scan each inode, starts with inode number 1 as inode number 0 is reserved */
+    int ret_read_disk_inode;
+    struct disk_inode inode;
+
+    for (uint32_t inode_number = 1; inode_number < input_super_block->s_ninodes; ++inode_number) {
+        ret_read_disk_inode = read_disk_inode(input_disk_image_fd, input_super_block, inode_number, &inode);
+        if (ret_read_disk_inode < 0) {
+            ++(*error_count);
+
+            continue;
+        }
+
+        /* check inode format */
+        if (inode.i_mode != 0 && inode.i_mode != (IALLOC | IFREG) && inode.i_mode != (IALLOC | IFDIR)) {
+            fprintf(stderr, "ERROR: inode %" PRIu32 " is in invalid mode\n", inode_number);
+
+            ++(*error_count);
+        }
+
+        if (inode.i_size0 > NDIRECT * BLOCKSIZE) {
+            fprintf(stderr, "ERROR: inode %" PRIu32 " has invalid file size: %" PRIu32 "\n", inode_number, inode.i_size0);
+
+            ++(*error_count);
+        }
+
+        /* check used inode consistency */
+        int bitmap_bit = bitmap_get(input_disk_image_fd, input_super_block, inode_number, INODE_BITMAP);
+        if (bitmap_bit < 0) {
+            ++(*error_count);
+
+            continue;
+        }
+
+        if (bitmap_bit == 1) {
+            if ((inode.i_mode & IALLOC) != 0) {
+                ++scan_used_inodes;
+            } else {
+                fprintf(stderr, "ERROR: inode %" PRIu32 " in inode bitmap is allocated but inode itself is not allocated\n", inode_number);
+
+                ++(*error_count);
+            }
+        } else {
+            if ((inode.i_mode & IALLOC) != 0) {
+                ++scan_used_inodes;
+                fprintf(stderr, "ERROR: inode %" PRIu32 " in inode bitmap is not allocated but inode itself is allocated\n", inode_number);
+
+                ++(*error_count);
+            }
+        }
     }
 
-    if (input_disk_inode_buffer->i_size0 > NDIRECT * BLOCKSIZE) {
-        fprintf(stderr, "ERROR: inode %" PRIu32 " has invalid file size: %" PRIu32 "\n", input_disk_inode_number, input_disk_inode_buffer->i_size0);
+    /* compare number of scanned used inodes and used inodes from superblock */
+    if (superblock_used_inodes != scan_used_inodes) {
+        fprintf(stderr, "ERROR: number of used inodes in superblock inode bitmap does not match number of used inodes in scanned inodes: %" PRId32 " <=> %" PRId32 "\n", superblock_used_inodes, scan_used_inodes);
 
         ++(*error_count);
     }
@@ -171,7 +226,8 @@ int main(int argc, char *argv[]) {
     printf("===== SUPERBLOCK CHECK =====\n");
     check_superblock(&sb, &superblock_error, &superblock_fatal);
     printf("\n");
-    print_stats(superblock_error, superblock_fatal);
+    print_error_stats(superblock_error);
+    print_fatal_stats(superblock_fatal);
 
     /* bail out if any fatal is found in superblock check stage. filesystem layout is broken */
     if (superblock_fatal > 0) {
@@ -180,10 +236,16 @@ int main(int argc, char *argv[]) {
     }
 
     /* inode check */
+    printf("\n===== INODE CHECK =====\n");
+    check_inode(disk_image_fd, &sb, &inode_error);
+    printf("\n");
+    print_error_stats(inode_error);
 
     /* disk block check */
 
     total_failure = superblock_error + inode_error + block_error;
+
+    close(disk_image_fd);
 
     if (total_failure > 0) {
         exit(EXIT_FAILURE);
