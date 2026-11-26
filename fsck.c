@@ -139,6 +139,22 @@ static void check_inode(int input_disk_image_fd, struct superblock *input_super_
 
         ++(*error_count);
     }
+
+    /* check root inode */
+    ret_read_disk_inode = read_disk_inode(input_disk_image_fd, input_super_block, ROOT_INODE, &inode);
+    if (ret_read_disk_inode < 0) {
+        fprintf(stderr, "ERROR: failed to read root inode\n");
+
+        ++(*error_count);
+    } else {
+        uint32_t data_block_start = 2 + input_super_block->s_inode_map_size + input_super_block->s_block_map_size + input_super_block->s_isize;
+
+        if (inode.i_mode != (IALLOC | IFDIR) || inode.i_addr[0] != data_block_start) {
+            fprintf(stderr, "ERROR: root inode is invalid\n");
+
+            ++(*error_count);
+        }
+    }
 }
 
 int main(int argc, char *argv[]) {
